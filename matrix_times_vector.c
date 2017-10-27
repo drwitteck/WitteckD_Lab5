@@ -19,8 +19,8 @@ int main(int argc, char* argv[]) {
 	int anstype, row;
 	srand(time(0));  //Seed for a random number generator
 	MPI_Init(&argc, &argv);  //Initialize MPI execution environment (argc - pointer to num of args, argv - pointer to arg vector)
-	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);  //Size of the group associated with a communicator (size - number of processes in the group of comm (int))    
-	MPI_Comm_rank(MPI_COMM_WORLD, &myid);  //The rank of the calling process (MPI_Comm, int *rank) comm communicator, rank of calling process
+	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);  //Total number of MPI processes running (size - number of processes in the group of comm (int))
+	MPI_Comm_rank(MPI_COMM_WORLD, &myid);  //The ID of the current MPI process running (MPI_Comm, int *rank) comm communicator, rank of calling process
 
 	if (argc > 1) {
 		nrows = atoi(argv[1]); //Convert string to int
@@ -42,21 +42,27 @@ int main(int argc, char* argv[]) {
 			//Returns elapsed time on calling processor (returns time in seconds since arbitrary time in the past).
 			starttime = MPI_Wtime();
 			numsent = 0;
-			//Broadcasts a message from the process with rank root to all other processes of the comm (void *buffer, int count, MPI_DOUBLE - Datatype datatype, int root, MPI_Comm comm)
+			//Broadcasts a message from the process with rank root to all other processes of the comm
+            //(void *buffer, int count, MPI_DOUBLE - Datatype datatype, int root, MPI_Comm comm)
 			MPI_Bcast(b, ncols, MPI_DOUBLE, master, MPI_COMM_WORLD);
 
 			for (i = 0; i < min(numprocs-1, nrows); i++) {
 				for (j = 0; j < ncols; j++) {
 					buffer[j] = aa[i * ncols + j];
 			}
-				//Performs a blocking send (const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm) 
+				//Performs a blocking send
+                //MPI_Send(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
+                //buf (your data) - starting address of send buffer, count - number of elements to send, type - MPI data type of each send buffer element
+                //dest - node rank id to send the buffer to, tag - message tag (label a message with a special number), comm - communicator.
 				MPI_Send(buffer, ncols, MPI_DOUBLE, i+1, i+1, MPI_COMM_WORLD);             
 				numsent++;
 			}
 
 			for (i = 0; i < nrows; i++) {
-				//Blocking receive for a message (count - max num of elements in the receive buffer (int), datatype - datatype of each reveive buffer element, source - rank of source, 
-				//tag - message tag, comm - communicator)
+				//Blocking receive for a message
+                //MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status *status)
+                //buf - starting address of receive buffer, count - number of elements in receive buffer, type - same as send,
+                //src - node rank id to receive the buffer from, tag - same as send, comm - same as send, status -
 				MPI_Recv(&ans, 1, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);   
 				sender = status.MPI_SOURCE;
 				anstype = status.MPI_TAG;
