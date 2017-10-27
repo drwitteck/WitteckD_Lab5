@@ -2,9 +2,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#define min(x, y) ((x)<(y)?(x):(y))
+#include <math.h>
+//#define min(x, y) ((x)<(y)?(x):(y))
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[]) { //argc - number of args passed, argv[] - pointer array that points to each arg (argv[0] holds name of program
 	int nrows, ncols;
 	double *aa, *b, *c;  //Pointer to an address that contains a double    
 	double *buffer, ans;
@@ -35,7 +36,7 @@ int main(int argc, char* argv[]) {
 		// Master Code goes here
 			for (i = 0; i < nrows; i++) {
 				for (j = 0; j < ncols; j++) {
-					aa[i*ncols + j] = (double)rand()/RAND_MAX;
+					aa[i * ncols + j] = (double)rand() / RAND_MAX;
 				}
 			}
 
@@ -46,7 +47,7 @@ int main(int argc, char* argv[]) {
             //(void *buffer, int count, MPI_DOUBLE - Datatype datatype, int root, MPI_Comm comm)
 			MPI_Bcast(b, ncols, MPI_DOUBLE, master, MPI_COMM_WORLD);
 
-			for (i = 0; i < min(numprocs-1, nrows); i++) {
+			for (i = 0; i < fmin(numprocs-1, nrows); i++) {
 				for (j = 0; j < ncols; j++) {
 					buffer[j] = aa[i * ncols + j];
 			}
@@ -54,7 +55,7 @@ int main(int argc, char* argv[]) {
                 //MPI_Send(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
                 //buf (your data) - starting address of send buffer, count - number of elements to send, type - MPI data type of each send buffer element
                 //dest - node rank id to send the buffer to, tag - message tag (label a message with a special number), comm - communicator.
-				MPI_Send(buffer, ncols, MPI_DOUBLE, i+1, i+1, MPI_COMM_WORLD);             
+				MPI_Send(buffer, ncols, MPI_DOUBLE, i + 1, i + 1, MPI_COMM_WORLD);
 				numsent++;
 			}
 
