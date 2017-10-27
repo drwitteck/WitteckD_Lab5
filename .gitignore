@@ -1,0 +1,8 @@
+
+.dist/
+.idea/WiiteckD_Lab5.iml
+.idea/misc.xml
+.idea/modules.xml
+.idea/workspace.xml
+.idea/vcs.xml
+cmake-build-debug/
