@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) { //argc - number of args passed, argv[] - poin
 
 	if (argc > 1) {
 		nrows = atoi(argv[1]); //Convert string to int
-		ncols = nrows;
+		ncols = nrows; //Gives you n x n matrix based on user entry
 		aa = (double*)malloc(sizeof(double) * nrows * ncols);  //allocates a block of size bytes of memory, returning a pointer to the beginning of the block
 		b = (double*)malloc(sizeof(double) * ncols);  //number of columns
 		c = (double*)malloc(sizeof(double) * nrows);  //number of rows
