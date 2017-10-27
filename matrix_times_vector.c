@@ -47,10 +47,10 @@ int main(int argc, char* argv[]) { //argc - number of args passed, argv[] - poin
             //(void *buffer, int count, MPI_DOUBLE - Datatype datatype, int root, MPI_Comm comm)
 			MPI_Bcast(b, ncols, MPI_DOUBLE, master, MPI_COMM_WORLD);
 
-			for (i = 0; i < fmin(numprocs-1, nrows); i++) {
+			for (i = 0; i < fmin(numprocs - 1, nrows); i++) {
 				for (j = 0; j < ncols; j++) {
 					buffer[j] = aa[i * ncols + j];
-			}
+			    }
 				//Performs a blocking send
                 //MPI_Send(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
                 //buf (your data) - starting address of send buffer, count - number of elements to send, type - MPI data type of each send buffer element
