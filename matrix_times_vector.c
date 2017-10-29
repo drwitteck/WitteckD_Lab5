@@ -15,6 +15,7 @@ int main(int argc, char* argv[]) { //argc - number of args passed, argv[] - poin
 	int nruns;
 	int myid, master, numberOfProcesses;
 	double starttime, endtime;
+    FILE *filePointer;
 	MPI_Status status;  //Structure containing: MPI_Source - id of processor sending the message, MPI_Tag - the message tag, MPI_Error - error status
 	int i, j, numsent, sender;
 	int anstype, row;
@@ -24,7 +25,11 @@ int main(int argc, char* argv[]) { //argc - number of args passed, argv[] - poin
 	MPI_Comm_rank(MPI_COMM_WORLD, &myid);  //The ID of the current MPI process running (MPI_Comm, int *rank) comm communicator, rank of calling process
 
 	if (argc > 1) {
-		numberOfRows = atoi(argv[1]); //Convert string to int
+        filePointer = fopen(argv[1], "r");
+        if(filePointer == NULL) perror("Error opening file");
+        numberOfRows = fgetc(filePointer);
+
+		//numberOfRows = atoi(argv[1]); //Convert string to int
 		numberOfColumns = numberOfRows; //Gives you n x n matrix based on user entry
 		matrixA = (double*)malloc(sizeof(double) * numberOfRows * numberOfColumns);  //allocates a block of size bytes of memory, returning a pointer to the beginning of the block
 		b = (double*)malloc(sizeof(double) * numberOfColumns);  //memory space for number of columns
@@ -100,8 +105,7 @@ int main(int argc, char* argv[]) { //argc - number of args passed, argv[] - poin
 
 			if (myid <= numberOfRows) {
 				while(1) {
-					MPI_Recv(buffer, numberOfColumns, MPI_DOUBLE, master, MPI_ANY_TAG,
-					MPI_COMM_WORLD, &status);
+					MPI_Recv(buffer, numberOfColumns, MPI_DOUBLE, master, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
 					if (status.MPI_TAG == 0){
 						break;
