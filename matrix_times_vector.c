@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) { //argc - number of args passed, argv[] - poin
         numberOfRows = fgetc(filePointer);
 
 		//numberOfRows = atoi(argv[1]); //Convert string to int
-		numberOfColumns = numberOfRows; //Gives you n x n matrix based on user entry
+		numberOfColumns = numberOfRows;
 		matrixA = (double*)malloc(sizeof(double) * numberOfRows * numberOfColumns);  //allocates a block of size bytes of memory, returning a pointer to the beginning of the block
 		b = (double*)malloc(sizeof(double) * numberOfColumns);  //memory space for number of columns
 		resultMatrix = (double*)malloc(sizeof(double) * numberOfRows * numberOfColumns);  //memory space for number of rows *****ADDED numberOfColumns
@@ -100,6 +100,14 @@ int main(int argc, char* argv[]) { //argc - number of args passed, argv[] - poin
 			// Slave Code goes here
             //Receive data sent from master and calculate matrix multiplication
             //Send back each result to the master and display result
+            //**************************************************************
+            for(i = 0; i < nrows; i++){
+                MPI_Send(row to dest);
+                if (dest = numprocs)
+                    dest = 1;
+                else
+                    dest++;
+            }
 
 			MPI_Bcast(b, numberOfColumns, MPI_DOUBLE, master, MPI_COMM_WORLD);
 
