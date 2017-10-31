@@ -14,6 +14,7 @@ int main(int argc, char* argv[]) { //argc - number of args passed, argv[] - poin
 	int run_index;
 	int nruns;
 	int myid, master, numberOfProcesses;
+    long fileSize;
 	double starttime, endtime;
     FILE *filePointer;
 	MPI_Status status;  //Structure containing: MPI_Source - id of processor sending the message, MPI_Tag - the message tag, MPI_Error - error status
@@ -27,24 +28,37 @@ int main(int argc, char* argv[]) { //argc - number of args passed, argv[] - poin
 	if (argc > 1) {
         filePointer = fopen(argv[1], "r");
         if(filePointer == NULL) perror("Error opening file");
-        numberOfRows = fgetc(filePointer);
+
+        fseek(filePointer, 0, SEEK_END);
+        fileSize = ftell(filePointer);
+        rewind(filePointer);
+
+        matrixA = (double*)malloc(sizeof(double) * numberOfRows * numberOfColumns);
+        matrixAFromFile = (double*) fread(argv[1], sizeof(double), (size_t) fileSize, filePointer);
 
 		//numberOfRows = atoi(argv[1]); //Convert string to int
 		numberOfColumns = numberOfRows;
-		matrixA = (double*)malloc(sizeof(double) * numberOfRows * numberOfColumns);  //allocates a block of size bytes of memory, returning a pointer to the beginning of the block
+		//matrixA = (double*)malloc(sizeof(double) * numberOfRows * numberOfColumns);  //allocates a block of size bytes of memory, returning a pointer to the beginning of the block
 		b = (double*)malloc(sizeof(double) * numberOfColumns);  //memory space for number of columns
 		resultMatrix = (double*)malloc(sizeof(double) * numberOfRows * numberOfColumns);  //memory space for number of rows *****ADDED numberOfColumns
 		buffer = (double*)malloc(sizeof(double) * numberOfColumns); //memory space for
 		master = 0;
 
-        //Create a matrix of size nrows / ncols and fill each index of aa(0.0, 0.1, 0.2, etc..) with random values
 		if (myid == master) {
 		// Master Code goes here
-			for (i = 0; i < numberOfRows; i++) {
-				for (j = 0; j < numberOfColumns; j++) {
-					matrixA[i * numberOfColumns + j] = (double)rand() / RAND_MAX;
-				}
-			}
+            //Create a matrix of size nrows / ncols and fill each index of aa(0.0, 0.1, 0.2, etc..) with random values
+//			for (i = 0; i < numberOfRows; i++) {
+//				for (j = 0; j < numberOfColumns; j++) {
+//					matrixA[i * numberOfColumns + j] = (double)rand() / RAND_MAX;
+//				}
+//			}
+            for(i = 0; i < nrows; i++){
+                MPI_Send(row to dest);
+                if (dest = numprocs)
+                    dest = 1;
+                else
+                    dest++;
+            }
 
 			//Returns elapsed time on calling processor (returns time in seconds since arbitrary time in the past).
 			starttime = MPI_Wtime();
@@ -100,14 +114,6 @@ int main(int argc, char* argv[]) { //argc - number of args passed, argv[] - poin
 			// Slave Code goes here
             //Receive data sent from master and calculate matrix multiplication
             //Send back each result to the master and display result
-            //**************************************************************
-            for(i = 0; i < nrows; i++){
-                MPI_Send(row to dest);
-                if (dest = numprocs)
-                    dest = 1;
-                else
-                    dest++;
-            }
 
 			MPI_Bcast(b, numberOfColumns, MPI_DOUBLE, master, MPI_COMM_WORLD);
 
