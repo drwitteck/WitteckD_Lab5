@@ -4,7 +4,7 @@ project(WitteckD_Lab5)
 set(CMAKE_CXX_STANDARD 11)
 
 set(SOURCE_FILES
-        matrix_times_vector.c
+        witteck_matrix_times_matrix.c
         mmult_mpi_omp.c)
 
 add_executable(WitteckD_Lab5 ${SOURCE_FILES})
