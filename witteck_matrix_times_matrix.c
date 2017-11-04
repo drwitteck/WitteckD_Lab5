@@ -8,7 +8,7 @@
 void printResultMatrix();
 
 int nRowsA, nRowsB, nColsA, nColsB;
-int myid, numprocs;
+int myid, numberOfProcs;
 int i, j, k;
 int offset, workers;
 int divideRows, leftOverRows, rows;
@@ -35,15 +35,15 @@ int divideRows;
 
 int main(int argc, char *argv[]){
     MPI_Init(&argc, &argv);
-    MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
+    MPI_Comm_size(MPI_COMM_WORLD, &numberOfProcs);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 
     if (myid == 0){
-        for (i = 1; i < numprocs; i++){
+        for (i = 1; i < numberOfProcs; i++){
             //Try to divide up rows evenly among available processors
-            divideRows = (ROWS / (numprocs - 1));
+            divideRows = (ROWS / (numberOfProcs - 1));
             low = (i - 1) * divideRows;
-            if (((i + 1) == numprocs) && ((ROWS % (numprocs - 1)) != 0)) {
+            if (((i + 1) == numberOfProcs) && ((ROWS % (numberOfProcs - 1)) != 0)) {
                 high = ROWS;
             } else {
                 high = low + divideRows;
@@ -76,7 +76,7 @@ int main(int argc, char *argv[]){
     }
 
     if (myid == 0){
-        for (i = 1; i < numprocs; i++) {
+        for (i = 1; i < numberOfProcs; i++) {
             MPI_Recv(&low, 1, MPI_INT, i, 2, MPI_COMM_WORLD, &status);
             MPI_Recv(&high, 1, MPI_INT, i, 2 + 1, MPI_COMM_WORLD, &status);
             MPI_Recv(&resultMatrix[low][0], (high - low) * COLUMNS, MPI_DOUBLE, i, 2 + 2, MPI_COMM_WORLD, &status);
@@ -89,7 +89,7 @@ int main(int argc, char *argv[]){
 }
 
 void printResultMatrix(){
-    printf("\n\n\n");
+    printf("\n");
     for (i = 0; i < ROWS; i++) {
         printf("\n");
         for (j = 0; j < COLUMNS; j++)
@@ -97,5 +97,3 @@ void printResultMatrix(){
     }
     printf("\n\n");
 }
-
-
