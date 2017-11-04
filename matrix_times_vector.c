@@ -1,145 +1,101 @@
 #include "mpi.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
-#include <math.h>
-//#define min(x, y) ((x)<(y)?(x):(y))
 
-int main(int argc, char* argv[]) { //argc - number of args passed, argv[] - pointer array that points to each arg (argv[0] holds name of program
-	int numberOfRows, numberOfColumns;
-	double *matrixA, *b, *resultMatrix;  //Pointer to an address that contains a double
-	double *buffer, multiplicationResult;
-	double *times;
-	double total_times;
-	int run_index;
-	int nruns;
-	int myid, master, numberOfProcesses;
-    long fileSize;
-	double starttime, endtime;
-    FILE *filePointer;
-	MPI_Status status;  //Structure containing: MPI_Source - id of processor sending the message, MPI_Tag - the message tag, MPI_Error - error status
-	int i, j, numsent, sender;
-	int anstype, row;
-	srand(time(0));  //Seed for a random number generator
-	MPI_Init(&argc, &argv);  //Initialize MPI execution environment (argc - pointer to num of args, argv - pointer to arg vector)
-	MPI_Comm_size(MPI_COMM_WORLD, &numberOfProcesses);  //Total number of MPI processes running (size - number of processes in the group of comm (int))
-	MPI_Comm_rank(MPI_COMM_WORLD, &myid);  //The ID of the current MPI process running (MPI_Comm, int *rank) comm communicator, rank of calling process
+#define ROWS 5
+#define COLUMNS 5
 
-	if (argc > 1) {
-        filePointer = fopen(argv[1], "r");
-        if(filePointer == NULL) perror("Error opening file");
+void printResultMatrix();
 
-        fseek(filePointer, 0, SEEK_END);
-        fileSize = ftell(filePointer);
-        rewind(filePointer);
+int nRowsA, nRowsB, nColsA, nColsB;
+int myid, numprocs;
+int i, j, k;
+int offset, workers;
+int divideRows, leftOverRows, rows;
+MPI_Status status;
+double matrixA[ROWS][COLUMNS] = {
+        {1.0, 2.0, 3.0, 4.0, 5.0},
+        {6.0, 7.0, 8.0, 9.0, 10.0},
+        {11.0, 12.0, 13.0, 14.0, 15.0},
+        {16.0, 17.0, 18.0, 19.0, 20.0},
+        {21.0, 22.0, 23.0, 24.0, 25.0}
+};
+double matrixB[ROWS][COLUMNS] = {
+        {1.0, 0.0, 0.0, 0.0, 0.0},
+        {0.0, 1.0, 0.0, 0.0, 0.0},
+        {0.0, 0.0, 1.0, 0.0, 0.0},
+        {0.0, 0.0, 0.0, 1.0, 0.0},
+        {0.0, 0.0, 0.0, 0.0, 1.0}
+};
+double resultMatrix[ROWS][COLUMNS];
+int low;
+int high;
+int divideRows;
 
-        matrixA = (double*)malloc(sizeof(double) * numberOfRows * numberOfColumns);
-        matrixAFromFile = (double*) fread(argv[1], sizeof(double), (size_t) fileSize, filePointer);
 
-		//numberOfRows = atoi(argv[1]); //Convert string to int
-		numberOfColumns = numberOfRows;
-		//matrixA = (double*)malloc(sizeof(double) * numberOfRows * numberOfColumns);  //allocates a block of size bytes of memory, returning a pointer to the beginning of the block
-		b = (double*)malloc(sizeof(double) * numberOfColumns);  //memory space for number of columns
-		resultMatrix = (double*)malloc(sizeof(double) * numberOfRows * numberOfColumns);  //memory space for number of rows *****ADDED numberOfColumns
-		buffer = (double*)malloc(sizeof(double) * numberOfColumns); //memory space for
-		master = 0;
+int main(int argc, char *argv[]){
+    MPI_Init(&argc, &argv);
+    MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
+    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 
-		if (myid == master) {
-		// Master Code goes here
-            //Create a matrix of size nrows / ncols and fill each index of aa(0.0, 0.1, 0.2, etc..) with random values
-//			for (i = 0; i < numberOfRows; i++) {
-//				for (j = 0; j < numberOfColumns; j++) {
-//					matrixA[i * numberOfColumns + j] = (double)rand() / RAND_MAX;
-//				}
-//			}
-            for(i = 0; i < nrows; i++){
-                MPI_Send(row to dest);
-                if (dest = numprocs)
-                    dest = 1;
-                else
-                    dest++;
+    if (myid == 0){
+        for (i = 1; i < numprocs; i++){
+            //Try to divide up rows evenly among available processors
+            divideRows = (ROWS / (numprocs - 1));
+            low = (i - 1) * divideRows;
+            if (((i + 1) == numprocs) && ((ROWS % (numprocs - 1)) != 0)) {
+                high = ROWS;
+            } else {
+                high = low + divideRows;
             }
 
-			//Returns elapsed time on calling processor (returns time in seconds since arbitrary time in the past).
-			starttime = MPI_Wtime();
-			numsent = 0;
+            MPI_Send(&low, 1, MPI_INT, i, 1, MPI_COMM_WORLD);
+            MPI_Send(&high, 1, MPI_INT, i, 1 + 1, MPI_COMM_WORLD);
+            MPI_Send(&matrixA[low][0], (high - low) * COLUMNS, MPI_DOUBLE, i, 1 + 2, MPI_COMM_WORLD);
+        }
+    }
 
-			//Broadcasts a message from the process with rank root to all other processes of the comm
-            //(void *buffer, int count, MPI_DOUBLE - Datatype datatype, int root, MPI_Comm comm)
-            //buf (your data) - starting address of send buffer, count - number of elements to send, type - MPI data type of each send buffer element
-            //dest - node rank id to send the buffer to, tag - message tag (label a message with a special number), comm - communicator.
-			MPI_Bcast(b, numberOfColumns, MPI_DOUBLE, master, MPI_COMM_WORLD);
+    MPI_Bcast(&matrixB, ROWS * COLUMNS, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-            //fmin - takes minimum of: number of running processes or the number of rows (because if we have more rows than running processes, we cannot
-            //exceed the number of processes)
-            //stores values in aa into buffer and sends each row to the next node rank id (0+1, 1+1, 2+1, etc., up to row amount or max num of processes avail)
-			for (i = 0; i < fmin(numberOfProcesses - 1, numberOfRows); i++) {
-				for (j = 0; j < numberOfColumns; j++) {
-					buffer[j] = matrixA[i * numberOfColumns + j];
-			    }
+    if (myid > 0){
+        MPI_Recv(&low, 1, MPI_INT, 0, 1, MPI_COMM_WORLD, &status);
+        MPI_Recv(&high, 1, MPI_INT, 0, 1 + 1, MPI_COMM_WORLD, &status);
+        MPI_Recv(&matrixA[low][0], (high - low) * COLUMNS, MPI_DOUBLE, 0, 1 + 2, MPI_COMM_WORLD, &status);
 
-				//Performs a blocking send
-                //MPI_Send(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
-                //buf (your data) - starting address of send buffer, count - number of elements to send, type - MPI data type of each send buffer element
-                //dest - node rank id to send the buffer to, tag - message tag (label a message with a special number), comm - communicator.
-				MPI_Send(buffer, numberOfColumns, MPI_DOUBLE, i + 1, i + 1, MPI_COMM_WORLD);
-				numsent++;
-			}
+        for (i = low; i < high; i++) {
+            for (j = 0; j < COLUMNS; j++) {
+                for (k = 0; k < ROWS; k++) {
+                    resultMatrix[i][j] += (matrixA[i][k] * matrixB[k][j]);
+                }
+            }
+        }
 
-			for (i = 0; i < numberOfRows; i++) {
-				//Blocking receive for a message
-                //MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status *status)
-                //buf - starting address of receive buffer, count - number of elements in receive buffer, type - same as send,
-                //src - node rank id to receive the buffer from, tag - same as send, comm - same as send, status -
-				MPI_Recv(&multiplicationResult, 1, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-				sender = status.MPI_SOURCE;
-				anstype = status.MPI_TAG;
-				resultMatrix[anstype - 1] = multiplicationResult;
+        MPI_Send(&low, 1, MPI_INT, 0, 2, MPI_COMM_WORLD);
+        MPI_Send(&high, 1, MPI_INT, 0, 2 + 1, MPI_COMM_WORLD);
+        MPI_Send(&resultMatrix[low][0], (high - low) * COLUMNS, MPI_DOUBLE, 0, 2 + 2, MPI_COMM_WORLD);
+    }
 
-				if (numsent < numberOfRows) {
-					for (j = 0; j < numberOfColumns; j++) {
-						buffer[j] = matrixA[numsent*numberOfColumns + j];
-					}
+    if (myid == 0){
+        for (i = 1; i < numprocs; i++) {
+            MPI_Recv(&low, 1, MPI_INT, i, 2, MPI_COMM_WORLD, &status);
+            MPI_Recv(&high, 1, MPI_INT, i, 2 + 1, MPI_COMM_WORLD, &status);
+            MPI_Recv(&resultMatrix[low][0], (high - low) * COLUMNS, MPI_DOUBLE, i, 2 + 2, MPI_COMM_WORLD, &status);
+        }
 
-					MPI_Send(buffer, numberOfColumns, MPI_DOUBLE, sender, numsent+1, MPI_COMM_WORLD);
-					numsent++;
-				} else {
-					MPI_Send(MPI_BOTTOM, 0, MPI_DOUBLE, sender, 0, MPI_COMM_WORLD);
-				}
-			}
-
-				endtime = MPI_Wtime();
-				printf("%f\n",(endtime - starttime));
-		} else {
-			// Slave Code goes here
-            //Receive data sent from master and calculate matrix multiplication
-            //Send back each result to the master and display result
-
-			MPI_Bcast(b, numberOfColumns, MPI_DOUBLE, master, MPI_COMM_WORLD);
-
-			if (myid <= numberOfRows) {
-				while(1) {
-					MPI_Recv(buffer, numberOfColumns, MPI_DOUBLE, master, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-
-					if (status.MPI_TAG == 0){
-						break;
-					}
-
-					row = status.MPI_TAG;
-					multiplicationResult = 0.0;
-
-					for (j = 0; j < numberOfColumns; j++) {
-						multiplicationResult += buffer[j] * b[j];
-					}
-
-					MPI_Send(&multiplicationResult, 1, MPI_DOUBLE, master, row, MPI_COMM_WORLD);
-				}
-			}
-		}
-	} else {
-		fprintf(stderr, "Usage matrix_times_vector <size>\n");
-	}
-
-	MPI_Finalize();  //Terminates MPI connection
-	return 0;
+        printResultMatrix();
+    }
+    MPI_Finalize();
+    return 0;
 }
+
+void printResultMatrix(){
+    printf("\n\n\n");
+    for (i = 0; i < ROWS; i++) {
+        printf("\n");
+        for (j = 0; j < COLUMNS; j++)
+            printf("%8.2f  ", resultMatrix[i][j]);
+    }
+    printf("\n\n");
+}
+
+
